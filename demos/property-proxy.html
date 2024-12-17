@@ -90,10 +90,21 @@
         },
       })
 
-      myInterpreter.setProperty(myGlobalObject,"blueManager",myInterpreter.nativeToPseudo(blueManager));
+      var pseudoObject = myInterpreter.nativeToPseudo(blueManager);
+
+      var ast = myInterpreter.parse_("var blueManager = null;");
+
+      ast.body[0].declarations[0].init = {
+        type: "Literal",
+        value: pseudoObject,
+        raw: "pseudoObject"
+      };
+
+      myInterpreter.appendCode(ast);
+
       document.getElementById("blueToggle").disabled = ""
 
-      document.getElementById("code").innerHTML += "// blueManager was added to the global scope\n"
+      document.getElementById("code").innerHTML += "var blueManager; // appended via AST\n"
     }
     function toggleBlue() {
       const toAppend = `blueManager.blue = ${!blueStatus};\n`
@@ -116,7 +127,14 @@
   any api could use a similar process to return objects with custom getters and setters in this way.
 </p>
 
-<p>Click <em>Parse</em>, then click <em>Toggle Indicator</em>.  Open your browser's console for errors.</p>
+<p>Click <em>Parse</em>, then click <em>Toggle Red</em>, <em>Red Alert</em>.
+  Both of these operations use the redManager, which was added to the global scope.</p>
+<p>
+  Click <em>Get Blue Manager</em> to append blueManager to the state, then click <em>Toggle Blue</em>.
+  Blue manager is appended into the program as an AST.
+  Toggle Blue is then able to use a method of blueManager to toggle the indicator.
+</p>
+<p>Open your browser's console for errors.</p>
 
 <p><textarea id="code" style="height: 10em;" spellcheck="false">
 
