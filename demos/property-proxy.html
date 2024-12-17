@@ -14,7 +14,11 @@
 
     function initFunction(interpreter, globalObject) {
       myGlobalObject = globalObject
-      var redManager = {};
+      var redManager = {
+        alert:function(){
+          window.alert("The current value of red is " + redManager.red)
+        }
+      };
 
       Object.defineProperty(redManager, "red", {
         set: function (value) {
@@ -28,18 +32,13 @@
         },
       })
       interpreter.setProperty(globalObject, 'redManager',interpreter.nativeToPseudo(redManager));
-
-      var wrapper = function alert(text) {
-        return window.alert(arguments.length ? text : '');
-      };
-      interpreter.setProperty(globalObject, 'alert',
-              interpreter.createNativeFunction(wrapper));
     }
 
     function parseButton() {
       var code = document.getElementById('code').value;
       myInterpreter = new Interpreter(code, initFunction);
       disable('');
+      document.getElementById("code").innerHTML += "// redManager added to the globalObject on init\n"
     }
 
     function toggleRed() {
@@ -53,7 +52,7 @@
     }
 
     function redAlert() {
-      const toAppend = `alert("The current value of red is " + redManager.red);\n`
+      const toAppend = `redManager.alert();\n`
 
       myInterpreter.appendCode(toAppend)
 
@@ -103,6 +102,7 @@
       myInterpreter.appendCode(ast);
 
       document.getElementById("blueToggle").disabled = ""
+      document.getElementById("blueManagerButton").disabled = "disabled"
 
       document.getElementById("code").innerHTML += "var blueManager; // appended via AST\n"
     }
@@ -122,15 +122,19 @@
 <h1>JS-Interpreter Object.defineProperty Demo</h1>
 
 <p>While Proxy is an ES6 feature, Object.defineProperty can be used to achieve a similar proxy effect per property.
-  This can be used to simulate complex objects from within the interpreter.
-  This demo achieves the illusion of passing a complex object into the interpreter while using append code, but
-  any api could use a similar process to return objects with custom getters and setters in this way.
+  This can be used to offload state management to a native system, for example.
+</p>
+
+<p>
+  Objects with pseudo proxies can be appended to the globalObject on init, as the 'redManager' shows below.
+  Alternatively, the pseudoProxy can be constructed and parsed via AST and appended to the program.
+  This latter approach is useful when implementing a long-lived interpreter.
 </p>
 
 <p>Click <em>Parse</em>, then click <em>Toggle Red</em>, <em>Red Alert</em>.
   Both of these operations use the redManager, which was added to the global scope.</p>
 <p>
-  Click <em>Get Blue Manager</em> to append blueManager to the state, then click <em>Toggle Blue</em>.
+  Click <em>Add Blue Manager</em> to append blueManager to the state, then click <em>Toggle Blue</em>.
   Blue manager is appended into the program as an AST.
   Toggle Blue is then able to use a method of blueManager to toggle the indicator.
 </p>
