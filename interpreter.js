@@ -2672,10 +2672,24 @@ Interpreter.prototype.nativeToPseudo = function(nativeObj, opt_cycles) {
     pseudoObj = this.createObjectProto(this.OBJECT_PROTO);
   }
   cycles.pseudo.push(pseudoObj);
-  for (var key in nativeObj) {
-    this.setProperty(pseudoObj, key,
-        this.nativeToPseudo(nativeObj[key], cycles));
+
+  // Handle properties, including getters and setters.
+  var descriptors = Object.getOwnPropertyDescriptors(nativeObj);
+  for (var key in descriptors) {
+    var descriptor = descriptors[key];
+    if (descriptor.get || descriptor.set) {
+      Object.defineProperty(pseudoObj.properties, key, {
+        get: descriptor.get,
+        set: descriptor.set,
+        enumerable: descriptor.enumerable,
+        configurable: descriptor.configurable,
+      });
+    } else if (descriptor.value !== undefined) {
+      // Handle regular property
+      this.setProperty(pseudoObj, key, this.nativeToPseudo(descriptor.value, cycles));
+    }
   }
+
   return pseudoObj;
 };
 

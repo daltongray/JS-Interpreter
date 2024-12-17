@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>JS-Interpreter Object.defineProperty Demo</title>
+  <link href="style.css" rel="stylesheet" type="text/css">
+  <script src="../acorn.js"></script>
+  <script src="../interpreter.js"></script>
+  <script>
+
+    var redStatus = false, blueStatus = false;
+
+    var myInterpreter, myGlobalObject;
+
+    function initFunction(interpreter, globalObject) {
+      myGlobalObject = globalObject
+      var redManager = {};
+
+      Object.defineProperty(redManager, "red", {
+        set: function (value) {
+          redStatus = value;
+          document.getElementById("red-indicator").value = redStatus ?
+                  "#ff0000" :
+                  "#000000"
+        },
+        get: function () {
+          return redStatus
+        },
+      })
+      interpreter.setProperty(globalObject, 'redManager',interpreter.nativeToPseudo(redManager));
+
+      var wrapper = function alert(text) {
+        return window.alert(arguments.length ? text : '');
+      };
+      interpreter.setProperty(globalObject, 'alert',
+              interpreter.createNativeFunction(wrapper));
+    }
+
+    function parseButton() {
+      var code = document.getElementById('code').value;
+      myInterpreter = new Interpreter(code, initFunction);
+      disable('');
+    }
+
+    function toggleRed() {
+      const toAppend = `redManager.red = ${!redStatus};\n`
+
+      myInterpreter.appendCode(toAppend)
+
+      document.getElementById("code").innerHTML += toAppend
+
+      run()
+    }
+
+    function redAlert() {
+      const toAppend = `alert("The current value of red is " + redManager.red);\n`
+
+      myInterpreter.appendCode(toAppend)
+
+      document.getElementById("code").innerHTML += toAppend
+
+      run()
+    }
+
+    function run(){
+      if (myInterpreter.run()) {
+        // Async function hit.  There's more code to run.
+        setTimeout(run, 100);
+      }
+    }
+
+    function disable(disabled) {
+      document.getElementById('redToggle').disabled = disabled;
+      document.getElementById('redAlert').disabled = disabled;
+      document.getElementById('blueManagerButton').disabled = disabled;
+    }
+
+    function addBlueManager() {
+      var blueManager = {};
+
+      Object.defineProperty(blueManager, "blue", {
+        set: function (value) {
+          blueStatus = value;
+          document.getElementById("blue-indicator").value = blueStatus ?
+                  "#0000ff" :
+                  "#000000"
+        },
+        get: function () {
+          return blueStatus
+        },
+      })
+
+      myInterpreter.setProperty(myGlobalObject,"blueManager",myInterpreter.nativeToPseudo(blueManager));
+      document.getElementById("blueToggle").disabled = ""
+
+      document.getElementById("code").innerHTML += "// blueManager was added to the global scope\n"
+    }
+    function toggleBlue() {
+      const toAppend = `blueManager.blue = ${!blueStatus};\n`
+
+      myInterpreter.appendCode(toAppend)
+
+      document.getElementById("code").innerHTML += toAppend
+
+      run()
+    }
+
+  </script>
+</head>
+<body>
+<h1>JS-Interpreter Object.defineProperty Demo</h1>
+
+<p>While Proxy is an ES6 feature, Object.defineProperty can be used to achieve a similar proxy effect per property.
+  This can be used to simulate complex objects from within the interpreter.
+  This demo achieves the illusion of passing a complex object into the interpreter while using append code, but
+  any api could use a similar process to return objects with custom getters and setters in this way.
+</p>
+
+<p>Click <em>Parse</em>, then click <em>Toggle Indicator</em>.  Open your browser's console for errors.</p>
+
+<p><textarea id="code" style="height: 10em;" spellcheck="false">
+
+</textarea><br>
+  <button onclick="parseButton()">Parse</button>
+  <button onclick="toggleRed()" id="redToggle" disabled="disabled">Toggle Red</button>
+  <button onclick="redAlert()" id="redAlert" disabled="disabled">Red Alert</button>
+  <button onclick="addBlueManager()" id="blueManagerButton" disabled="disabled">Get Blue Manager</button>
+  <button onclick="toggleBlue()" id="blueToggle" disabled="disabled">Toggle Blue</button>
+</p>
+
+<input id="red-indicator" type="color" value="#000000">
+<input id="blue-indicator" type="color" value="#000000">
+
+<p>Back to the <a href="../docs.html">JS-Interpreter documentation</a>.</p>
+
+<script>
+  disable('disabled');
+</script>
+</body>
+</html>
